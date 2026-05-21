@@ -1,0 +1,43 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "outDir": "./dist/out-tsc",
+    "rootDir": "./src",
+
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+
+    "lib": ["ES2022", "dom"],
+
+    "isolatedModules": true,
+    "noEmitOnError": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": false,
+    "noImplicitReturns": true,
+    "noUnusedLocals": false,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": false,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "useUnknownInCatchVariables": true,
+    "alwaysStrict": true,
+
+    "skipLibCheck": true,
+    "types": ["node"],
+
+    "useDefineForClassFields": false
+  },
+
+  "angularCompilerOptions": {
+    "enableI18nLegacyMessageIdFormat": false,
+    "strictInjectionParameters": true,
+    "strictInputAccessModifiers": true,
+    "strictTemplates": true
+  },
+
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}
