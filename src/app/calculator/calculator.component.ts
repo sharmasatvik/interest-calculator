@@ -544,7 +544,7 @@ export class CalculatorComponent implements OnInit {
     this.tooltip.set(null);
   }
 
-  // ─── Validation ─────────────────────────────────────────────────────
+  // Validation
   validate(): boolean {
     const errs: Record<string, string | undefined> = {};
     const p = this.principal();
@@ -629,7 +629,7 @@ export class CalculatorComponent implements OnInit {
     this.activeTab.set(tab);
   }
 
-  // ─── Formatting ─────────────────────────────────────────────────────
+  // Formatting
   formatCurrency(val: number): string {
     return new Intl.NumberFormat(this.userLocale, {
       style: "currency",
