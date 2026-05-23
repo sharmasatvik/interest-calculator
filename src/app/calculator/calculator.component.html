@@ -1,0 +1,517 @@
+<div class="page">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-icon">%</div>
+      <div>
+        <h1 class="header-title">Interest Calculator</h1>
+        <p class="header-subtitle">
+          Compare Simple Interest vs. Compound Interest over time
+        </p>
+      </div>
+      <div class="currency-badge">
+        <span class="currency-dot"></span>
+        {{ userCurrency }} &mdash; {{ userTimezone }}
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- Input Card -->
+    <section class="card">
+      <h2 class="section-title">Enter Parameters</h2>
+      <div class="form-grid">
+        <!-- Principal Amount -->
+        <div class="field">
+          <label class="label" for="principal"
+            >Principal / Annual Investment (P)</label
+          >
+          <div class="input-wrap">
+            <span class="input-prefix">{{ currencyLabel() }}</span>
+            <input
+              id="principal"
+              type="number"
+              class="input"
+              [class.input-error]="errors()['principal']"
+              placeholder="e.g. 100000"
+              min="0"
+              [value]="principal() ?? ''"
+              (input)="onFieldChange('principal', $any($event.target).value)"
+            />
+          </div>
+          @if (errors()["principal"]) {
+            <span class="error-msg">{{ errors()["principal"] }}</span>
+          }
+        </div>
+
+        <!-- Opening Balance -->
+        <div class="field">
+          <label class="label" for="openingBalance">
+            Opening Balance
+            <span class="optional-tag">optional</span>
+          </label>
+          <div class="input-wrap">
+            <span class="input-prefix">{{ currencyLabel() }}</span>
+            <input
+              id="openingBalance"
+              type="number"
+              class="input"
+              [class.input-error]="errors()['openingBalance']"
+              placeholder="e.g. 50000"
+              min="0"
+              [value]="openingBalance() ?? ''"
+              (input)="
+                onFieldChange('openingBalance', $any($event.target).value)
+              "
+            />
+          </div>
+          @if (errors()["openingBalance"]) {
+            <span class="error-msg">{{ errors()["openingBalance"] }}</span>
+          } @else {
+            <span class="field-hint"
+              >Existing balance before this investment starts</span
+            >
+          }
+        </div>
+
+        <!-- Rate of Interest -->
+        <div class="field">
+          <label class="label" for="rate">Rate of Interest (R)</label>
+          <div class="input-wrap">
+            <input
+              id="rate"
+              type="number"
+              class="input input-suffix-pad"
+              [class.input-error]="errors()['rate']"
+              placeholder="e.g. 8.5"
+              min="0"
+              max="100"
+              step="0.1"
+              [value]="rate() ?? ''"
+              (input)="onFieldChange('rate', $any($event.target).value)"
+            />
+            <span class="input-suffix">%</span>
+          </div>
+          @if (errors()["rate"]) {
+            <span class="error-msg">{{ errors()["rate"] }}</span>
+          }
+        </div>
+
+        <!-- Total Investment Time -->
+        <div class="field">
+          <label class="label" for="time">Time Period (T)</label>
+          <div class="input-wrap">
+            <input
+              id="time"
+              type="number"
+              class="input input-suffix-pad-lg"
+              [class.input-error]="errors()['time']"
+              placeholder="e.g. 10"
+              min="1"
+              max="50"
+              step="1"
+              [value]="time() ?? ''"
+              (input)="onFieldChange('time', $any($event.target).value)"
+            />
+            <span class="input-suffix">years</span>
+          </div>
+          @if (errors()["time"]) {
+            <span class="error-msg">{{ errors()["time"] }}</span>
+          }
+        </div>
+
+        <!-- Compounding Frequency -->
+        <div class="field">
+          <label class="label" for="freq">Compounding Frequency</label>
+          <select
+            id="freq"
+            class="select"
+            [value]="compoundFrequency()"
+            (change)="onFreqChange($any($event.target).value)"
+          >
+            @for (opt of compoundOptions; track opt.value) {
+              <option [value]="opt.value">{{ opt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Auto Step-Up Investment -->
+        <div class="field">
+          <label class="label">Annual Step-Up</label>
+          <div class="stepup-row">
+            <button
+              type="button"
+              class="toggle-btn"
+              [class.toggle-on]="stepUpEnabled()"
+              (click)="toggleStepUp()"
+            >
+              <span class="toggle-track">
+                <span class="toggle-thumb"></span>
+              </span>
+              {{ stepUpEnabled() ? "Enabled" : "Disabled" }}
+            </button>
+            @if (stepUpEnabled()) {
+              <div class="stepup-input">
+                <div class="input-wrap">
+                  <input
+                    type="number"
+                    class="input input-suffix-pad"
+                    [class.input-error]="errors()['stepUpRate']"
+                    placeholder="e.g. 10"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    [value]="stepUpRate() ?? ''"
+                    (input)="
+                      onFieldChange('stepUpRate', $any($event.target).value)
+                    "
+                  />
+                  <span class="input-suffix">%/yr</span>
+                </div>
+                @if (errors()["stepUpRate"]) {
+                  <span class="error-msg">{{ errors()["stepUpRate"] }}</span>
+                }
+              </div>
+            }
+          </div>
+          @if (stepUpEnabled()) {
+            <span class="field-hint"
+              >Investment amount increases by this % each year</span
+            >
+          } @else {
+            <span class="field-hint"
+              >Increase your annual investment each year</span
+            >
+          }
+        </div>
+      </div>
+
+      <!-- Formulas -->
+      <div class="formula-row">
+        <div class="formula-chip">
+          <span class="formula-key">SI</span> = P × R × T ÷ 100
+        </div>
+        <div class="formula-chip">
+          <span class="formula-key">CI</span> = P × (1 + R/n)^(n×T) − P
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="action-row">
+        <button class="btn-primary" (click)="calculate()">Calculate</button>
+        @if (showResults()) {
+          <button class="btn-secondary" (click)="reset()">Reset</button>
+        }
+      </div>
+    </section>
+
+    @if (showResults() && results(); as res) {
+      <!-- Summary Cards -->
+      <div class="summary-grid">
+        <div class="summary-card">
+          <p class="summary-label">Principal (P)</p>
+          <p class="summary-value">{{ formatCurrency(res.P) }}</p>
+          @if (res.B > 0) {
+            <p class="summary-sub">Opening: {{ formatCurrency(res.B) }}</p>
+          }
+        </div>
+        <div class="summary-card">
+          <p class="summary-label">Total Invested</p>
+          <p class="summary-value">{{ formatCurrency(res.totalInvested) }}</p>
+          <p class="summary-sub">{{ res.t }} yr &#64; {{ rate() }}% p.a.</p>
+        </div>
+        <div class="summary-card si-card">
+          <p class="summary-label si-label">Simple Interest</p>
+          <p class="summary-value si-value">{{ formatCurrency(res.SI) }}</p>
+          <p class="summary-sub">Total: {{ formatCurrency(res.totalSI) }}</p>
+        </div>
+        <div class="summary-card ci-card">
+          <p class="summary-label ci-label">Compound Interest</p>
+          <p class="summary-value ci-value">{{ formatCurrency(res.CI) }}</p>
+          <p class="summary-sub">Total: {{ formatCurrency(res.totalCI) }}</p>
+        </div>
+      </div>
+
+      <!-- Difference Banner -->
+      @if (difference(); as diff) {
+        <div class="diff-banner">
+          <div>
+            <p class="diff-title">Compound Interest earns more by</p>
+            <p class="diff-sub">
+              Over {{ res.t }} year{{ res.t !== 1 ? "s" : "" }} at {{ rate() }}%
+              p.a. compounded {{ compoundLabel().toLowerCase() }}
+              @if (stepUpEnabled() && res.su > 0) {
+                , {{ res.su * 100 | number: "1.0-1" }}% annual step-up
+              }
+            </p>
+          </div>
+          <div class="diff-right">
+            <p class="diff-amount">+{{ formatCurrency(diff.diff) }}</p>
+            <p class="diff-pct">({{ formatPct(diff.pct) }} more)</p>
+          </div>
+        </div>
+      }
+
+      <!-- Chart Card -->
+      <section class="card chart-card">
+        <div class="chart-header">
+          <div>
+            <h3 class="section-title" style="margin-bottom: 2px">
+              Growth Comparison
+            </h3>
+            <p class="chart-subtitle">Year-by-year accumulation</p>
+          </div>
+          <div class="tab-group">
+            <button
+              class="tab-btn"
+              [class.tab-active]="activeTab() === 'interest'"
+              (click)="setTab('interest')"
+            >
+              Interest Earned
+            </button>
+            <button
+              class="tab-btn"
+              [class.tab-active]="activeTab() === 'total'"
+              (click)="setTab('total')"
+            >
+              Total Amount
+            </button>
+          </div>
+        </div>
+
+        @if (chartSvgData(); as svg) {
+          <div class="chart-wrap">
+            <svg
+              #chartSvg
+              [attr.viewBox]="'0 0 ' + svgW + ' ' + svgH"
+              width="100%"
+              class="chart-svg"
+              aria-label="Interest comparison chart"
+              (mousemove)="onChartMouseMove($event, $any(chartSvg))"
+              (mouseleave)="onChartMouseLeave()"
+            >
+              <!-- Grid lines -->
+              @for (tick of svg.yTicks; track tick.y) {
+                <line
+                  [attr.x1]="padL"
+                  [attr.y1]="tick.y"
+                  [attr.x2]="svgW - padR"
+                  [attr.y2]="tick.y"
+                  stroke="#e5e7eb"
+                  stroke-width="1"
+                />
+              }
+
+              <!-- Y Axis labels -->
+              @for (tick of svg.yTicks; track tick.y) {
+                <text
+                  [attr.x]="padL - 8"
+                  [attr.y]="tick.y + 4"
+                  text-anchor="end"
+                  class="axis-label"
+                >
+                  {{ tick.label }}
+                </text>
+              }
+
+              <!-- X Axis labels -->
+              @for (tick of svg.xTicks; track tick.x) {
+                <text
+                  [attr.x]="tick.x"
+                  [attr.y]="svgH - padB + 18"
+                  text-anchor="middle"
+                  class="axis-label"
+                >
+                  {{ tick.label }}
+                </text>
+              }
+
+              <!-- X Axis title -->
+              <text
+                [attr.x]="padL + (svgW - padL - padR) / 2"
+                [attr.y]="svgH - 4"
+                text-anchor="middle"
+                class="axis-title"
+              >
+                Years
+              </text>
+
+              <!-- Area fills -->
+              <path [attr.d]="svg.areaA" fill="#3b82f6" fill-opacity="0.07" />
+              <path [attr.d]="svg.areaB" fill="#10b981" fill-opacity="0.07" />
+
+              <!-- Invested line (total tab only) -->
+              @if (svg.investedPath) {
+                <path
+                  [attr.d]="svg.investedPath"
+                  fill="none"
+                  stroke="#9ca3af"
+                  stroke-width="1.5"
+                  stroke-dasharray="5 3"
+                  stroke-linecap="round"
+                />
+              }
+
+              <!-- SI and CI lines -->
+              <path
+                [attr.d]="svg.pathA"
+                fill="none"
+                stroke="#3b82f6"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                [attr.d]="svg.pathB"
+                fill="none"
+                stroke="#10b981"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+
+              <!-- Tooltip crosshair + dots -->
+              @if (tooltip(); as tip) {
+                <line
+                  [attr.x1]="tip.svgX"
+                  [attr.y1]="padT"
+                  [attr.x2]="tip.svgX"
+                  [attr.y2]="svgH - padB"
+                  stroke="#9ca3af"
+                  stroke-width="1"
+                  stroke-dasharray="4 3"
+                />
+                <circle
+                  [attr.cx]="tip.svgX"
+                  [attr.cy]="tip.siY"
+                  r="5"
+                  fill="white"
+                  stroke="#3b82f6"
+                  stroke-width="2.5"
+                />
+                <circle
+                  [attr.cx]="tip.svgX"
+                  [attr.cy]="tip.ciY"
+                  r="5"
+                  fill="white"
+                  stroke="#10b981"
+                  stroke-width="2.5"
+                />
+              }
+            </svg>
+
+            <!-- HTML tooltip overlay -->
+            @if (tooltip(); as tip) {
+              <div
+                class="chart-tooltip"
+                [style.left.px]="
+                  tip.showRight ? tip.htmlX + 14 : tip.htmlX - 194
+                "
+                [style.top.px]="8"
+              >
+                <div class="tip-year">Year {{ tip.year }}</div>
+                <div class="tip-divider"></div>
+                <div class="tip-row">
+                  <span class="tip-dot" style="background: #3b82f6"></span>
+                  <span class="tip-key">{{
+                    activeTab() === "interest" ? "SI Earned" : "SI Total"
+                  }}</span>
+                  <span class="tip-val si-tip-val">{{
+                    formatCurrency(tip.siVal)
+                  }}</span>
+                </div>
+                <div class="tip-row">
+                  <span class="tip-dot" style="background: #10b981"></span>
+                  <span class="tip-key">{{
+                    activeTab() === "interest" ? "CI Earned" : "CI Total"
+                  }}</span>
+                  <span class="tip-val ci-tip-val">{{
+                    formatCurrency(tip.ciVal)
+                  }}</span>
+                </div>
+                <div class="tip-divider"></div>
+                <div class="tip-footer">
+                  <span>Invested</span>
+                  <span>{{ formatCurrency(tip.totalInvested) }}</span>
+                </div>
+              </div>
+            }
+
+            <!-- Legend -->
+            <div class="legend">
+              <div class="legend-item">
+                <span class="legend-dot" style="background: #3b82f6"></span>
+                <span class="legend-label">{{
+                  activeTab() === "interest" ? "Simple Interest" : "Total (SI)"
+                }}</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: #10b981"></span>
+                <span class="legend-label">{{
+                  activeTab() === "interest"
+                    ? "Compound Interest"
+                    : "Total (CI)"
+                }}</span>
+              </div>
+              @if (activeTab() === "total") {
+                <div class="legend-item">
+                  <span class="legend-dash"></span>
+                  <span class="legend-label">Total Invested</span>
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </section>
+
+      <!-- Year-by-Year Table -->
+      <section class="card table-card">
+        <div class="table-header">
+          <h3 class="section-title" style="margin-bottom: 2px">
+            Year-by-Year Breakdown
+          </h3>
+          <p class="chart-subtitle">Interest accumulation and running totals</p>
+        </div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Year</th>
+                <th>Invested</th>
+                <th class="si-col">SI Earned</th>
+                <th class="si-col">SI Total</th>
+                <th class="ci-col">CI Earned</th>
+                <th class="ci-col">CI Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of res.chartData.slice(1); track row.year) {
+                <tr>
+                  <td class="year-cell">{{ row.year }}</td>
+                  <td class="muted-cell">
+                    {{ formatCurrency(row.totalInvested) }}
+                  </td>
+                  <td class="si-cell">{{ formatCurrency(row.si) }}</td>
+                  <td class="muted-cell">{{ formatCurrency(row.siTotal) }}</td>
+                  <td class="ci-cell">{{ formatCurrency(row.ci) }}</td>
+                  <td class="muted-cell">{{ formatCurrency(row.ciTotal) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </section>
+    }
+
+    @if (!showResults()) {
+      <div class="empty-state">
+        Enter the values above and click <strong>Calculate</strong> to see the
+        comparison.
+      </div>
+    }
+  </main>
+
+  <footer class="footer">
+    Formulas: SI = P × R × T / 100 &nbsp;|&nbsp; CI = P × (1 + R/n)^(n×T) − P
+  </footer>
+</div>
